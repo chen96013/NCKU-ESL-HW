@@ -1,52 +1,52 @@
 #include "systemc.h"
-#include "HalfAdder.h"
-#include "FullAdder.h"
+#include "FIR16.h"
+#include <string>
+#include <math.h>
+
+using namespace std;
 
 int sc_main (int argc, char** argv) {
-    sc_signal<bool>A, B, Cin, S_HA, S_FA, C_HA, C_FA;
+    srand(time(NULL));
+    
+    // clock spec declaration and clock instantiate
+    sc_time  ClkPrd(10, SC_NS), ClkDly(0, SC_NS);
+    sc_clock CLK("clock0", ClkPrd, 0.5, ClkDly, true);
+    sc_signal<bool>RST;
 
-    HalfAdder HA0("Half-adder");
-    HalfAdder *HA0_ptr = &HA0;
-    HA0_ptr->A(A);
-    HA0_ptr->B(B);
-    HA0_ptr->Sum(S_HA);
-    HA0_ptr->Carry(C_HA);
+    sc_signal<sc_uint<32> >input, output;
+    
+    FIR16 Filter("movingAVE");
+    FIR16* Filter_ptr = &Filter;
+    Filter_ptr->clk(CLK);
+    Filter_ptr->rst(RST);
+    Filter_ptr->x(input);
+    Filter_ptr->y(output);
 
-    FullAdder FA0("Full-adder");
-    FullAdder *FA0_ptr = &FA0;
-    FA0_ptr->A(A);
-    FA0_ptr->B(B);
-    FA0_ptr->Cin(Cin);
-    FA0_ptr->S(S_FA);
-    FA0_ptr->Cout(C_FA);
 
     // Create signal tracing file (vcd format)
     sc_trace_file * tf = sc_create_vcd_trace_file("RESULT");
     // Add signal to trace file by reference (using pointer)
-    sc_trace(tf, A, "Half-adder_A");
-    sc_trace(tf, B, "Half-adder_B");
-    sc_trace(tf, S_HA, "Half-adder_Sum");
-    sc_trace(tf, C_HA, "Half-adder_Carry");
+    sc_trace(tf, Filter_ptr->clk, "clk");
+    sc_trace(tf, Filter_ptr->rst, "rst");
+    sc_trace(tf, Filter_ptr->x, "x");
+    sc_trace(tf, Filter_ptr->y, "y");
+    
+    RST.write(0);
+    input.write(0);
+    
+    sc_start(20, SC_NS);
+    
+    RST.write(1);
+    
+    sc_start(5, SC_NS);
 
-    sc_trace(tf, A, "Full-adder_A");
-    sc_trace(tf, B, "Full-adder_B");
-    sc_trace(tf, Cin, "Full-adder_Cin");
-    sc_trace(tf, S_FA, "Full-adder_S");
-    sc_trace(tf, C_FA, "Full-adder_Cout");
-
-    // use a nest loop to let all 2^3 type of status run once
-    A.write(0);B.write(0);Cin.write(0);
-    for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 2; j++) {
-            for (int k = 0; k < 2; k++) {
-                sc_start(10, SC_NS);
-                A.write(!A.read());
-            }
-            B.write(!B.read());
-        }
-        Cin.write(!Cin.read());
+    for (int i = 0; i < 1000; i++) {
+        int In_Signal;
+        In_Signal = (unsigned int)((sin((float)i * 0.001 * 2 * M_PI) + 1) * exp2(16));
+        input.write(In_Signal);
+        sc_start(1, SC_NS);
     }
-
+    
     // close wave tracing
     sc_close_vcd_trace_file(tf);
 

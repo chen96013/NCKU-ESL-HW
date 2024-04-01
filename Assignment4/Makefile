@@ -1,11 +1,11 @@
 SYSTEMC_DIR = /usr/local/systemc-2.3.4
-PROJECT     = Adders
+PROJECT     = FIR16
 BUILDFLAGS  = -g3
 CXX         = g++
 
 INCFLAGS    = -I. -I${SYSTEMC_DIR}/include
 LDFLAGS     = -L${SYSTEMC_DIR}/lib-linux64 -lsystemc -lm
-SRC_CPPHEAD = HalfAdder FullAdder
+SRC_CPPHEAD = FIR16
 SRC_CPP     =
 HEADERS     =
 MAIN        = main.cpp
