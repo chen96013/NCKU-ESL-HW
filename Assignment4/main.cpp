@@ -2,6 +2,7 @@
 #include "FIR16.h"
 #include <string>
 #include <math.h>
+#include <time.h>
 
 using namespace std;
 
@@ -40,9 +41,10 @@ int sc_main (int argc, char** argv) {
     
     sc_start(5, SC_NS);
 
+    // Input Signal is the sine wave with uniformal noise loaded
     for (int i = 0; i < 1000; i++) {
         int In_Signal;
-        In_Signal = (unsigned int)((sin((float)i * 0.001 * 2 * M_PI) + 1) * exp2(16));
+        In_Signal = (unsigned int)((sin((float)i * 0.01 * 2 * M_PI) + 1) * exp2(16)) + rand() % 10 * exp2(12);
         input.write(In_Signal);
         sc_start(1, SC_NS);
     }
