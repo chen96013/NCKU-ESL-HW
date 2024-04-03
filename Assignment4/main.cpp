@@ -3,6 +3,9 @@
 #include <string>
 #include <math.h>
 #include <time.h>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
 
 using namespace std;
 
@@ -41,13 +44,33 @@ int sc_main (int argc, char** argv) {
     
     sc_start(5, SC_NS);
 
-    // Input Signal is the sine wave with uniformal noise loaded
-    for (int i = 0; i < 1000; i++) {
-        int In_Signal;
-        In_Signal = (unsigned int)((sin((float)i * 0.01 * 2 * M_PI) + 1) * exp2(16)) + rand() % 10 * exp2(12);
-        input.write(In_Signal);
-        sc_start(1, SC_NS);
+    ifstream TestWave;
+    TestWave.open("firdata", ios::in);
+    if (TestWave.fail()) {
+        ofstream WaveFile;
+        WaveFile.open("firdata", ios::app);
+
+        for (int i = 0; i < 1000; i++) {
+            unsigned int In_Signal;
+            In_Signal = (unsigned int)((sin((float)i * 0.01 * 2 * M_PI) + 1) * exp2(16)) + rand() % 10 * exp2(12);
+            WaveFile << hex << setw(8) << setfill('0') << In_Signal;
+            input.write(In_Signal);
+            sc_start(1, SC_NS);
+            if (i!=999) {WaveFile << endl;}
+        }
+        WaveFile.close();
     }
+    else {
+        while(!TestWave.eof()) {
+            unsigned int In_Signal;
+            TestWave >> hex >> In_Signal;
+            input.write(In_Signal);
+            sc_start(1, SC_NS);
+        }
+        
+    }
+    // Input Signal is the sine wave with uniformal noise loaded
+    TestWave.close();
     
     // close wave tracing
     sc_close_vcd_trace_file(tf);
