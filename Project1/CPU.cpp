@@ -30,6 +30,7 @@ void CPU::cpu_p() {
 			trans_m->set_response_status(tlm::TLM_INCOMPLETE_RESPONSE);
 					
 			master_p->b_transport(*trans_m, delay);				
+			cout << "CPU: Transfer " << transfer << " finish" << endl;
 		}
 		
 		else if (Interrupt.read()==0/* && ready==1*/){	

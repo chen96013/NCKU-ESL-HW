@@ -21,14 +21,19 @@ SC_MODULE(DMA) {
     sc_in   < bool>  reset;
     sc_out  < bool>  interrupt;
 
-    sc_signal< sc_uint<32> > SOURCE;
-    sc_signal< sc_uint<32> > TARGET;
-    sc_signal< sc_uint<32> > SIZE;
-    sc_signal< bool > START_CLEAR;
+    sc_signal< sc_uint<32> >SOURCE;
+    sc_signal< sc_uint<32> >TARGET;
+    sc_signal< sc_uint<32> >SIZE;
+    sc_signal< bool >       START_CLEAR;
 
+    unsigned char* data_slave;
+    sc_dt::uint64 addr_slave;
+    tlm::tlm_command cmd_slave;
     unsigned char *data;
+    sc_dt::uint64 addr;
 
     void DMA_Master();
+    void DMA_Registers();
     void DMA_Slave(tlm::tlm_generic_payload &trans, sc_time &delay);
 
     SC_CTOR(DMA) : slave("slave"), master("master") {
@@ -37,6 +42,9 @@ SC_MODULE(DMA) {
         SC_CTHREAD(DMA_Master, clk.pos());
         reset_signal_is(reset, false);
         data = new unsigned char[4];
+
+        SC_CTHREAD(DMA_Registers, clk.pos());
+        reset_signal_is(reset, false);
     }
 };
 

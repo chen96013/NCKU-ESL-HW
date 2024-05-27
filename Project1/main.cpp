@@ -64,8 +64,7 @@ int sc_main(int argc, char* argv[]) {
 	// sc_trace(tf, dma->temp_target, "temp_target");
 	
 	
-	/*
-	// RMA
+	// RAM
 	// 1
 	sc_trace(tf, ram->mem[4], "mem[4]");
 	sc_trace(tf, ram->mem[100], "mem[100]");
@@ -83,7 +82,6 @@ int sc_main(int argc, char* argv[]) {
 	sc_trace(tf, ram->mem[60], "mem[60]");
 	sc_trace(tf, ram->mem[64], "mem[64]");
 	sc_trace(tf, ram->mem[68], "mem[68]");	
-	*/
 	//sc_trace(tf, dma->srw, "srw");
 	
 	
