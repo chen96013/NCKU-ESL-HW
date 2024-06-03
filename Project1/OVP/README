@@ -1,0 +1,121 @@
+This document describes how to turn a DMA module from generic input/output
+ports into using TLM 2.0, then to put the DMA module into a RISC-V system.
+
+In a system we need the architecture description and the software. In OVP
+this is described in two directories, platform and application, respectively.
+
+I. platform:
+
+The platform directory contains the platform.cpp as the top level
+module that describes the system, using OVP models and the SystemC
+modules we developed. In this example we have a DMA, defined
+in DMA.h and implemented in DMA.cpp.
+
+I.i platform.cpp
+
+platform.cpp is where sc_main() resides. In it clock and reset signals are
+declared plus the top level module. In this example the top level module
+is a SystemC module named as 'BareMetal', and instantiated as 'top'.
+
+platform.cpp has to include all modules used. In this example we have
+
+#include "ovpworld.org/modelSupport/tlmModule/1.0/tlm/tlmModule.hpp"
+#include "ovpworld.org/modelSupport/tlmDecoder/1.0/tlm/tlmDecoder.hpp"
+#include "ovpworld.org/memory/ram/1.0/tlm/tlmMemory.hpp"
+#include "andes.ovpworld.org/processor/riscv/1.0/tlm/processor.igen.hpp"
+#include "DMA.h"
+
+to include the top level module tlmModule, bus module tlmDecoder,
+RAM module tlmMemory, Andes RISC-V module and our own DMA module.
+
+The BareMetal class defines all the resources needed: clock, reset, a
+tlmModule instantiated as Platform is the main body to house all resources,
+i.e. processors, memories, busses, I/O and modules. Busses are declared
+with tlmDecoder module, and RAM's are declared with tlmRam. In this example
+we use Andes RISC-V module riscv. All of the above can be listed as:
+1. sc_in<bool>    clk;       // The clock port
+2. sc_in<bool>    rst;       // The reset port
+3. tlmModule      Platform;  // The top level module
+4. tlmDecoder     bus1;      // The bus
+5. tlmRam         ram1;      // The first RAM
+6. tlmRam         ram2;      // The second RAM
+7. riscv          cpu1;      // The RISC-V processor
+8. DMA*           dma1;      // The DMA. Notice this is a pointer
+
+We will need to implement the BareMetal constructor to build the architecture:
+
+BareMetal(sc_module_name name);
+
+Notice that unlike all other OVP provided modules, our DMA modules does not
+have the constructor DMA(tlmModule, char*, ...), we must code the instantiation
+of the DMA and connect it to the system. Please refer to the code
+for how to do module instantiations and connections.
+
+I.ii Interrupt Adaptor
+In the example provided the DMA interrupt and clear ports are removed.
+It is because the interrupt port of RISC-V models on the OVP platform is
+implemented with TLM 2.0 analysis port. In this project you are required
+to implement an adaptor to transform the DMA bool type interrupt output
+to the RISC-V analysis type interrupt input. Since there is no clear
+supported on Andes N25 so the clear function remains shut.
+
+I.iii Makefile
+
+Please follow the Makefile provided to compile the platform. Notice how
+to add module source code, e.g. DMA.cpp, into the SRC lable. Then we
+leverage the Makefile OVP provides, Makefile.TLM.platform, to do the
+make for us
+
+II. application
+
+In this example there are two test programs and the RISC-V interrupt code.
+Two test programs are a simple HelloWorld program and the DMA test program.
+Interrupt code is required to be the Interrupt Service Routine (ISR) for
+RISC-V to pick up the interrupt and transfer to the proper service routine.
+
+II.i HelloWorld.c
+
+The HelloWorld.c program has only one statement, printf("\nHello World!\n");
+Its purpose is to test run a program in a bare metal fashion.
+
+It has a Makefile.hello to help build the code. To compile, do
+
+make -f Makefile.hello
+
+II.ii dmaTest.c, trap.S and riscvInterrupts.h
+
+For a processor to handle interrupts a trap is needed to capture the interrupt,
+which is an external hardware signal. This trap is implemented in trap.S, a
+must to all applications that need to handle interrupts.
+
+trap.S writes to a CSR (Control Status Register) for further handling. And
+rescvInterrupts.h is the assembly code to handle CSR's and thus also a
+must have code to handle interrupts.
+
+dmaTest.c, is a combination of the DMA driver plus a test program. It
+contains int_init() to initialized the interrupt handler (ISR, that is),
+int_enable is then used to enable the interrupt. Some CSR write/read
+functions, writeReg32(), readReg32(), writeReg8() and readReg8() are
+provided to process CSR's. Finally interruptHandler(void) is the ISR.
+
+When ISR is in place then dmaTest.c runs a test by first fill the
+source memory with data. It then programs DMA control registers
+to execute the data copy operation. Finally a check to read from
+both source and target memories to see if the data has been successfully
+copied.
+
+III. Running the simulation
+
+In DMA_project one can find two .sh files, hello.sh and dma.sh. Execute
+hello.sh to:
+1. cross compile the HelloWorld.c with RISC-V corss compiler,
+2. compile platform.cpp with the SystemC library,
+3. then run the platform SystemC simulator with HelloWorld loaded.
+4. One can see "Hello World!" in the SystemC simulation.
+
+Execute dma.sh to:
+1. cross compile the dmaTest.c with RISC-V corss compiler,
+2. compile platform.cpp with the SystemC library,
+3. then run the platform SystemC simulator with dmaTest loaded.
+4. One can see the DMA testing processing in the SystemC simulation.
+
